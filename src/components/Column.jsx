@@ -1,31 +1,38 @@
 import { useDroppable, useDraggable } from '@dnd-kit/core';
+import { useState } from 'react';
 import TaskItem from './TaskItem';
 
 const DraggableTask = ({ task, onDelete }) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: task.id,
-  });
+    const [offset] = useState({ x: 0, y: 0 });
 
-  const style = {
-    transform: transform
-        ? `translate3d(${transform.x}px, ${transform.y}px, 0)`
-        : undefined,
-    zIndex: isDragging ? 1000 : 'auto',
-    position: isDragging ? 'fixed' : 'relative',
-    cursor: isDragging ? 'grabbing' : 'grab',
-    width: isDragging ? '31%' : 'auto', // ✅ Preserve width while dragging
-  };
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: task.id,
+    });
 
+    const dynamicStyle = {
+        transform: transform
+            ? `translate3d(${transform.x - offset.x}px, ${transform.y - offset.y}px, 0)`
+            : undefined,
+        zIndex: isDragging ? 1000 : 0,
+        position: isDragging ? 'absolute' : 'relative',
+        pointerEvents: isDragging ? 'none' : 'auto',
+    };
 
-  return (
-      <div ref={setNodeRef} style={style}>
-        <TaskItem
-            task={task}
-            onDelete={onDelete}
-            dragProps={{ dragHandleProps: listeners, draggableProps: attributes }}
-        />
-      </div>
-  );
+    return (
+        <div
+            ref={setNodeRef}
+            className={`draggable-task ${isDragging ? 'dragging' : ''}`}
+            style={dynamicStyle}
+            {...attributes}
+            {...listeners}
+        >
+            <TaskItem
+                task={task}
+                onDelete={onDelete}
+                dragProps={{ dragHandleProps: listeners, draggableProps: attributes }}
+            />
+        </div>
+    );
 };
 
 

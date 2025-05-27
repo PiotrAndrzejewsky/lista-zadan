@@ -4,7 +4,6 @@ import { Chart, ArcElement, Tooltip } from 'chart.js';
 Chart.register(ArcElement, Tooltip);
 
 const StatsPanel = ({ tasks, statuses }) => {
-  // policz ile w każdym statusie
   const counts = statuses.map(s => tasks.filter(t => t.status === s.id).length);
 
   const data = {

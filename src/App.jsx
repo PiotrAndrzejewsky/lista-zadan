@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { DndContext } from '@dnd-kit/core';
+import { DndContext, TouchSensor, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
 import Column from './components/Column';
 import StatsPanel from './components/StatsPanel';
 import CategoryManager from './components/CategoryManager';
@@ -15,6 +15,16 @@ const STATUSES = [
 ];
 
 function App() {
+  const sensors = useSensors(
+      useSensor(MouseSensor),
+      useSensor(TouchSensor, {
+        activationConstraint: {
+          delay: 0,
+          tolerance: 5,
+        },
+      })
+  );
+
   const [tasks, setTasks] = useState([]);
   const [categories, setCategories] = useState(['praca', 'dom', 'hobby']);
 
@@ -93,19 +103,19 @@ function App() {
 
       <TaskForm categories={categories} onAdd={addTask} />
 
-<DndContext onDragEnd={onDragEnd}>
-      <div className="columns">
-        {STATUSES.map((status) => (
-          <Column
-            key={status.id}
-            id={status.id}
-            status={status}
-            tasks={tasks.filter((t) => t.status === status.id)}
-            onDelete={onDelete}
-          />
-        ))}
-      </div>
-    </DndContext>
+      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+        <div className="columns">
+          {STATUSES.map((status) => (
+              <Column
+                  key={status.id}
+                  id={status.id}
+                  status={status}
+                  tasks={tasks.filter((t) => t.status === status.id)}
+                  onDelete={onDelete}
+              />
+          ))}
+        </div>
+      </DndContext>
     </div>
   );
 }
