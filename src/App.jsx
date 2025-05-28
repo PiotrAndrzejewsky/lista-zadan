@@ -2,17 +2,17 @@ import { useState, useEffect } from 'react';
 import { DndContext, TouchSensor, MouseSensor, useSensor, useSensors } from '@dnd-kit/core';
 import Column from './components/Column';
 import StatsPanel from './components/StatsPanel';
-import CategoryManager from './components/CategoryManager';
-import TaskForm from './components/TaskForm';
+import CategoryManager from './components/CategoryManager.jsx';
+import TaskForm from './components/TaskForm.jsx';
 import './App.css';
 import 'react-datepicker/dist/react-datepicker.css';
 
-
-const STATUSES = [
-  { id: 'todo', title: 'Do zrobienia', color: '#ff7675' },
-  { id: 'inprogress', title: 'W trakcie', color: '#fdcb6e' },
-  { id: 'done', title: 'Gotowe', color: '#55efc4' }
-];
+const withPort = (path) => {
+  const url = new URL(window.location.origin);
+  url.port = 5000;
+  url.pathname = path;
+  return url.toString();
+};
 
 function App() {
   const sensors = useSensors(
@@ -26,97 +26,139 @@ function App() {
   );
 
   const [tasks, setTasks] = useState([]);
+  const [columns, setColumns] = useState([]);
   const [categories, setCategories] = useState(['praca', 'dom', 'hobby']);
 
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('tasks')) || [];
-    console.log('Loaded tasks from localStorage:', saved);
-    setTasks(saved);
-
-    const cats = JSON.parse(localStorage.getItem('categories')) || categories;
-    console.log('Loaded categories from localStorage:', cats);
-    setCategories(cats);
+    fetchColumns();
+    fetchTasks();
+    fetchCategories();
   }, []);
 
-  useEffect(() => {
-    console.log('Saving tasks to localStorage:', tasks);
-    localStorage.setItem('tasks', JSON.stringify(tasks));
-
-    console.log('Saving categories to localStorage:', categories);
-    localStorage.setItem('categories', JSON.stringify(categories));
-  }, [tasks, categories]);
-
-  const addTask = (task) => {
-    const newTask = {
-      ...task,
-      id: `task-${Date.now()}`, // Ensure id is a string
-      status: 'todo',
-    };
-    console.log('Adding new task:', newTask);
-    setTasks((prev) => [...prev, newTask]);
-  };
-
-  const addCategory = (name) => {
-    if (name && !categories.includes(name)) {
-      console.log('Adding new category:', name);
-      setCategories(prev => [...prev, name]);
+  const fetchColumns = async () => {
+    try {
+      const response = await fetch(withPort('/api/columns'));
+      const data = await response.json();
+      setColumns(data);
+    } catch (error) {
+      console.error('Error fetching columns:', error);
     }
   };
 
-  const onDragEnd = (event) => {
+  const fetchTasks = async () => {
+    try {
+      const response = await fetch(withPort('/api/tasks'));
+      const data = await response.json();
+      setTasks(data);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(withPort('/api/categories'));
+      const data = await response.json();
+      if (data.length > 0) {
+        setCategories(data);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const addTask = async (task) => {
+    try {
+      const response = await fetch(withPort('/api/tasks'), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(task),
+      });
+      const newTask = await response.json();
+      setTasks((prev) => [...prev, newTask]);
+    } catch (error) {
+      console.error('Error adding task:', error);
+    }
+  };
+
+  const addCategory = async (name) => {
+    if (name && !categories.includes(name)) {
+      try {
+        await fetch(withPort('/api/categories'), {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ category: name }),
+        });
+        setCategories((prev) => [...prev, name]);
+      } catch (error) {
+        console.error('Error adding category:', error);
+      }
+    }
+  };
+
+  const onDragEnd = async (event) => {
     const { active, over } = event;
 
-    if (!over) {
-      console.log('Dropped outside a droppable area');
+    if (!over || active.id === over.id) {
       return;
     }
 
-    if (active.id === over.id) {
-      console.log('Dropped in the same position');
-      return;
+    try {
+      await fetch(withPort(`/api/tasks/${active.id}/status`), {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: over.id }),
+      });
+
+      setTasks((prev) =>
+          prev.map((task) => (task.id === active.id ? { ...task, status: over.id } : task))
+      );
+    } catch (error) {
+      console.error('Error updating task status:', error);
     }
-
-    setTasks((prev) => {
-      const updatedTasks = [...prev];
-      const taskIndex = updatedTasks.findIndex((task) => task.id === active.id);
-
-      if (taskIndex !== -1) {
-        updatedTasks[taskIndex].status = over.id; // Update the task's status to the new column
-      }
-
-      return updatedTasks;
-    });
   };
 
-  const onDelete = (id) => {
-    console.log('Deleting task with id:', id);
-    setTasks(prev => prev.filter(t => t.id !== id));
+  const onDelete = async (id) => {
+    try {
+      await fetch(withPort(`/api/tasks/${id}`), {
+        method: 'DELETE',
+      });
+      setTasks((prev) => prev.filter((t) => t.id !== id));
+    } catch (error) {
+      console.error('Error deleting task:', error);
+    }
   };
 
   return (
-    <div className="app-container">
-      <h1>✨ Super Lista Zadań ✨</h1>
-      <div className="top-row">
-        <CategoryManager onAdd={addCategory} />
-        <StatsPanel tasks={tasks} statuses={STATUSES} />
-      </div>
-
-      <TaskForm categories={categories} onAdd={addTask} />
-
-      <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-        <div className="columns">
-          {STATUSES.map((status) => (
-              <Column
-                  key={status.id}
-                  id={status.id}
-                  status={status}
-                  tasks={tasks.filter((t) => t.status === status.id)}
-                  onDelete={onDelete}
-              />
-          ))}
+      <div className="app-container">
+        <h1>✨ Super Lista Zadań ✨</h1>
+        <div className="top-row">
+          <CategoryManager onAdd={addCategory} />
+          <StatsPanel tasks={tasks} statuses={columns} />
         </div>
-      </DndContext>
-    </div>
+
+        <TaskForm categories={categories} onAdd={addTask} />
+
+        <DndContext sensors={sensors} onDragEnd={onDragEnd}>
+          <div className="columns">
+            {columns.map((column) => (
+                <Column
+                    key={column.id}
+                    id={column.id}
+                    status={column}
+                    tasks={tasks.filter((t) => t.status === column.id)}
+                    onDelete={onDelete}
+                />
+            ))}
+          </div>
+        </DndContext>
+      </div>
   );
 }
 

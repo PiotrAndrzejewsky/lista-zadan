@@ -35,7 +35,6 @@ const DraggableTask = ({ task, onDelete }) => {
     );
 };
 
-
 const Column = ({ id, status, tasks, onDelete }) => {
   const { setNodeRef } = useDroppable({ id });
 

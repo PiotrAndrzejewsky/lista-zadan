@@ -21,12 +21,12 @@ const TaskItem = React.forwardRef(({ task, onDelete, dragProps = {} }, ref) => (
             <span className="task-text">{task.text}</span>
             <div className="task-meta">
                 <span className="category">{task.category}</span>
-                <span className="deadline">{new Date(task.deadline).toLocaleDateString()}</span>
+                <span className="deadline">
+                    {new Date(task.deadline).toLocaleDateString()}
+                </span>
             </div>
         </div>
     </div>
 ));
-
-
 
 export default TaskItem;
