@@ -16,7 +16,7 @@ const TaskItem = React.forwardRef(({ task, onDelete, dragProps = {} }, ref) => (
             className="task-content"
             {...dragProps.draggableProps}
             {...dragProps.dragHandleProps}
-            style={{ flex: 1 }}
+            style={{ flex: 1, cursor: 'grab' }}
         >
             <span className="task-text">{task.text}</span>
             <div className="task-meta">

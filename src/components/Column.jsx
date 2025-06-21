@@ -23,13 +23,14 @@ const DraggableTask = ({ task, onDelete }) => {
             ref={setNodeRef}
             className={`draggable-task ${isDragging ? 'dragging' : ''}`}
             style={dynamicStyle}
-            {...attributes}
-            {...listeners}
         >
             <TaskItem
                 task={task}
                 onDelete={onDelete}
-                dragProps={{ dragHandleProps: listeners, draggableProps: attributes }}
+                dragProps={{
+                    draggableProps: attributes,
+                    dragHandleProps: listeners
+                }}
             />
         </div>
     );
