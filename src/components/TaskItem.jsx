@@ -16,14 +16,14 @@ const TaskItem = React.forwardRef(({ task, onDelete, dragProps = {} }, ref) => (
             className="task-content"
             {...dragProps.draggableProps}
             {...dragProps.dragHandleProps}
-            style={{ flex: 1 }}
+            style={{ flex: 1, cursor: 'grab' }}
         >
             <span className="task-text">{task.text}</span>
             <div className="task-meta">
                 <span className="category">{task.category}</span>
                 <span className="deadline">
-                    {new Date(task.deadline).toLocaleDateString()}
-                </span>
+          {new Date(task.deadline).toLocaleDateString()}
+        </span>
             </div>
         </div>
     </div>
